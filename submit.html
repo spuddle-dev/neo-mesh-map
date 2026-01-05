@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Submit Your Meshtastic Node Location</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196F3;
+        }
+        .instructions p {
+            margin-bottom: 8px;
+            color: #555;
+        }
+        #map {
+            height: 400px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 2px solid #ddd;
+        }
+        .form-group {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+        textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+        input[type="range"] {
+            width: 100%;
+            margin: 10px 0;
+        }
+        .range-value {
+            display: inline-block;
+            font-weight: bold;
+            color: #2196F3;
+            margin-left: 10px;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .selected-location {
+            background: #fff3cd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border-left: 4px solid #ffc107;
+        }
+        .hidden {
+            display: none;
+        }
+        .marker-preview {
+            background: white;
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border: 1px solid #ddd;
+        }
+        .back-to-map {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+
+    </style>
+</head>
+<body>
+    <h1>Submit Your Northeast Ohio Mesh Node Location</h1>
+    
+    <div class="back-to-map">
+        <a href="index.html" style="color:#333">&larr; Back to the map</a>
+    </div>
+    <div class="instructions">
+        <p><strong>Instructions</strong></p>
+        <p>1. Click on the map to place a circle.</p>
+        <p>2. Adjust the privacy circle slider to make the radius bigger or smaller.</p>
+        <p>3. Drag the circle to position it so it covers your location without being centered on it.</p>
+        <p>4. Add any optional notes and submit. We will add your node to the public map.</p>
+        <p><b>Please direct questions or comments to our <a href="https://discord.gg/hDCxm47JSF" style="color:#555">Discord</a>.</b></p>
+    </div>
+
+    <div id="map"></div>
+
+    <form id="locationForm" action="https://formsubmit.co/18772e9500aae0f89aea54411ac73c8b" method="POST">
+        <div class="form-group">
+            <label>Privacy Circle Radius</label>
+            <input type="range" id="fuzzRadius" name="fuzz_radius" min="300" max="1500" value="500" step="100">
+            <span class="range-value" id="radiusValue">500 yards</span>
+        </div>
+
+        <div id="locationDisplay" class="selected-location hidden">
+            <p id="coordsDisplay"></p>
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                Drag the circle so that it covers your location. This circle center and radius will be shared.
+            </p>
+        </div>
+
+        <input type="hidden" id="latitude" name="latitude" required>
+        <input type="hidden" id="longitude" name="longitude" required>
+
+        <div class="form-group">
+            <label for="notes">Notes (optional)</label>
+            <textarea id="notes" name="notes" placeholder="e.g., Node name, antenna type, elevation, etc."></textarea>
+        </div>
+
+        <!-- configuration for FormSubmit -->
+        <input type="hidden" name="_subject" value="New Meshtastic Node Submission">
+        <input type="hidden" name="_captcha" value="false">
+        <input type="text" name="_honey" style="display:none">
+        
+        <button type="submit" id="submitBtn" disabled>Submit</button>
+    </form>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+
+        const map = L.map('map', {
+            minZoom: 9
+        }).setView([41.4993, -81.6944], 10); // initialize map to cleveland area
+        
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19
+        }).addTo(map);
+
+        let circle = null;
+        let circleCenter = null;
+
+        const fuzzRadiusInput = document.getElementById('fuzzRadius');
+        const radiusValue = document.getElementById('radiusValue');
+        const locationDisplay = document.getElementById('locationDisplay');
+        const coordsDisplay = document.getElementById('coordsDisplay');
+        const submitBtn = document.getElementById('submitBtn');
+
+        fuzzRadiusInput.addEventListener('input', function() {
+            const radius = parseInt(this.value);
+            radiusValue.textContent = radius + ' yards';
+            
+            if (circle) {
+                const radiusMeters = radius * 0.9144;
+                circle.setRadius(radiusMeters);
+            }
+        });
+
+        function updateCoordinateDisplay(lat, lon) {
+            coordsDisplay.textContent = `Circle center: ${lat.toFixed(4)}, ${lon.toFixed(4)}`;
+            document.getElementById('latitude').value = lat.toFixed(6);
+            document.getElementById('longitude').value = lon.toFixed(6);
+        }
+
+        map.on('click', function(e) {
+            const radius = parseInt(fuzzRadiusInput.value);
+            const radiusMeters = radius * 0.9144;
+            
+            // remove the old circle on a new click
+            if (circle) {
+                map.removeLayer(circle);
+            }
+            
+            circle = L.circle([e.latlng.lat, e.latlng.lng], {
+                color: '#4CAF50',
+                fillColor: '#4CAF50',
+                fillOpacity: 0.2,
+                weight: 2,
+                radius: radiusMeters,
+                draggable: true
+            }).addTo(map);
+            
+            let isDragging = false;
+            
+            circle.on('mousedown', function(e) {
+                isDragging = true;
+                map.dragging.disable();
+                L.DomEvent.stopPropagation(e);
+            });
+            
+            map.on('mousemove', function(e) {
+                if (isDragging && circle) {
+                    circle.setLatLng(e.latlng);
+                    circleCenter = e.latlng;
+                    updateCoordinateDisplay(e.latlng.lat, e.latlng.lng);
+                }
+            });
+            
+            map.on('mouseup', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    map.dragging.enable();
+                }
+            });
+            
+            circle.on('touchstart', function(e) {
+                isDragging = true;
+                map.dragging.disable();
+                L.DomEvent.stopPropagation(e);
+            });
+            
+            map.on('touchmove', function(e) {
+                if (isDragging && circle && e.latlng) {
+                    circle.setLatLng(e.latlng);
+                    circleCenter = e.latlng;
+                    updateCoordinateDisplay(e.latlng.lat, e.latlng.lng);
+                }
+            });
+            
+            map.on('touchend', function() {
+                if (isDragging) {
+                    isDragging = false;
+                    map.dragging.enable();
+                }
+            });
+            
+            circleCenter = e.latlng;
+            updateCoordinateDisplay(e.latlng.lat, e.latlng.lng);
+            locationDisplay.classList.remove('hidden');
+            submitBtn.disabled = false;
+        });
+    </script>
+</body>
+</html>
