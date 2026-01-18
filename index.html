@@ -53,6 +53,15 @@
             margin-bottom: 20px;
             font-weight: 600;
         }
+        .new-node-indicator {
+            display: inline-block;
+            margin-left: 10px;
+            padding: 4px 8px;
+            background: #FF6B35;
+            color: white;
+            border-radius: 4px;
+            font-size: 11px;
+        }
 
     </style>
 </head>
@@ -73,7 +82,8 @@
 
         <div class="node-count">
             📡 <span id="nodeCount">0</span> nodes on the map
-            <span style="float:right; color: #333">Updated: 01/16/2026 at 9:56PM</span>
+            <span class="new-node-indicator">🆕 Newest node shown in orange</span>
+            <span style="float:right; color: #333">Updated: 01/17/2026 at 10:45PM</span>
         </div>
 
         <div id="map"></div>
@@ -113,6 +123,7 @@
             { lat: 41.499055, lon: -81.696786, radius: 300, notes: "Work day only" },
             { lat: 41.023897, lon: -81.525249, radius: 500, notes: "Nothing special. Coverage isn't that great due to geography.  T-Beam on a 5dbi antenna." }, 
             { lat: 41.212570, lon: -81.499013, radius: 500, notes: "KD8ASA Base 1" }, 
+            { lat: 41.720753, lon: -81.361549, radius: 500, notes: "Rooftop Solar 5.8dBi , 136FR1 Solar", isNewest: true }, 
         ];
         const map = L.map('map', {
             minZoom: 9
@@ -126,16 +137,19 @@
         nodes.forEach(node => {
             const radiusMeters = node.radius * 0.9144; // convert yards to meters
             
+            const isNewest = node.isNewest === true;
+            
             const circle = L.circle([node.lat, node.lon], {
-                color: '#1F83C1',
-                fillColor: '#60B2E5',
-                fillOpacity: 0.2,
-                weight: 2,
+                color: isNewest ? '#FF6B35' : '#1F83C1',
+                fillColor: isNewest ? '#FF8C42' : '#60B2E5',
+                fillOpacity: isNewest ? 0.3 : 0.2,
+                weight: isNewest ? 3 : 2,
                 radius: radiusMeters
             }).addTo(map);
 
-            if (node.notes) {
-                const popupText = `<strong>📡 Info</strong><br>${node.notes}<br><small>Privacy radius: ${node.radius} yards</small>`;
+            if (node.notes || isNewest) {
+                const newestBadge = isNewest ? '<span style="background:#FF6B35;color:white;padding:2px 6px;border-radius:3px;font-size:10px;margin-left:5px;">NEW</span>' : '';
+                const popupText = `<strong>📡 Info</strong>${newestBadge}<br>${node.notes}<br><small>Privacy radius: ${node.radius} yards</small>`;
                 circle.bindPopup(popupText);
             }
         });
