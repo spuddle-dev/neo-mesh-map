@@ -83,7 +83,7 @@
         <div class="node-count">
             📡 <span id="nodeCount">0</span> nodes on the map
             <span class="new-node-indicator">🆕 Newest node shown in orange</span>
-            <span style="float:right; color: #333">Updated: 03/03/2026 at 10:30PM</span>
+            <span style="float:right; color: #333">Updated: 05/03/2026 at 9:00AM</span>
         </div>
 
         <div id="map"></div>
@@ -149,8 +149,21 @@
             { lat: 41.447616, lon: -81.915264, radius: 500, notes: "NHB  NH Base (Heltec V4, rooftop install, no MQTT)"},
             { lat: 41.351170, lon: -82.166576, radius: 1000, notes: "P0G0 Base"},
             { lat: 41.436957, lon: -81.814814, radius: 800, notes: ""},
-            { lat: 40.723998, lon: -81.511738, radius: 300, notes: "Solar node", isNewest: true},
+            { lat: 40.723998, lon: -81.511738, radius: 300, notes: "Solar node"},
+            { lat: 40.878294, lon: -81.410336, radius: 1200, notes: "AG - Greezel Lp1 Pro" },
+            { lat: 40.923705, lon: -81.253925, radius: 1500, notes: "Tower #1_ seed studios solar -"},
+            { lat: 41.444313, lon: -80.618620, radius: 500, notes: "Solarray" },
+            { lat: 41.607485, lon: -81.100945, radius: 1000, notes: "25 ft, rooftop node on common channels / rates. Upgrading to greater height summer of '26." },
+            { lat: 40.921555, lon: -81.251965, radius: 1300, notes: "Tower #1" },
+            { lat: 40.874843, lon: -81.410837, radius: 800, notes: "Greezel(Ba23)" },
+            { lat: 41.884579, lon: -80.822639, radius: 1000, notes: "TRoMo-TbM1 !6c72e4d4 - attic mounted mqtt bridge - \"Client Base\"" },
+            { lat: 40.898059, lon: -80.840454, radius: 1400, notes: "770 monitoring for shtf and comm's down.... kc8sui" },
+            { lat: 41.480843, lon: -81.883610, radius: 300, notes: "" },
+            { lat: 40.978602, lon: -82.589035, radius: 1500, notes: "8dbi solar" },
+            { lat: 41.312371, lon: -81.480103, radius: 1500, notes: "" },
+            { lat: 41.345629, lon: -81.340027, radius: 500, notes: "locate One", isNewest: true },
         ];
+
         const map = L.map('map', {
             minZoom: 9
         }).setView([41.4993, -81.6944], 10);
